@@ -1,0 +1,77 @@
+---
+- name: Ensure tatuscan data directory exists
+  ansible.builtin.file:
+    path: "{{ tatuscan_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure data subdirectory exists and has correct permissions
+  ansible.builtin.file:
+    path: "{{ tatuscan_data_dir }}/data"
+    state: directory
+    owner: "{{ tatuscan_uid }}"
+    group: "{{ tatuscan_gid }}"
+    mode: '0775'
+    recurse: true
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/tatuscan.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/tatuscan.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Ensure tatuscan make directory exists
+  ansible.builtin.file:
+    path: "{{ tatuscan_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ tatuscan_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ tatuscan_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - tatuscan
+    - up
+
+- name: Start/Stop tatuscan service
+  community.docker.docker_compose_v2:
+    project_src: "{{ tatuscan_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: tatuscan_result
+  failed_when: tatuscan_result.failed and "No resource found to remove" not in tatuscan_result.msg
+  tags:
+    - tatuscan
+    - up
+    - down
+    - restart

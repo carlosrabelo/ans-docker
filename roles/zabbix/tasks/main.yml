@@ -1,0 +1,173 @@
+---
+- name: Ensure zabbix data directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_data_dir }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - zabbix
+
+- name: Ensure component base directories exist
+  ansible.builtin.file:
+    path: "{{ zabbix_data_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ zabbix_db_uid if item == 'postgresql' else zabbix_uid }}"
+    group: "{{ zabbix_db_gid if item == 'postgresql' else zabbix_gid }}"
+    mode: '0755'
+  loop:
+    - postgresql
+    - server
+    - web
+  tags:
+    - zabbix
+
+- name: Ensure zabbix make directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure zabbix server build directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_make_dir }}/server"
+    state: directory
+    mode: '0755'
+
+- name: Template Zabbix Server Dockerfile
+  ansible.builtin.template:
+    src: Dockerfile.server.j2
+    dest: "{{ zabbix_make_dir }}/server/Dockerfile"
+    mode: '0644'
+  tags:
+    - zabbix
+
+- name: Create .dockerignore for Zabbix Server
+  ansible.builtin.copy:
+    content: |
+      data
+      logs
+    dest: "{{ zabbix_make_dir }}/server/.dockerignore"
+    mode: '0644'
+  tags:
+    - zabbix
+
+- name: Ensure data and logs subdirectories exist
+  ansible.builtin.file:
+    path: "{{ zabbix_data_dir }}/{{ item.0 }}/{{ item.1 }}"
+    state: directory
+    owner: "{{ zabbix_db_uid if item.0 == 'postgresql' else zabbix_uid }}"
+    group: "{{ zabbix_db_gid if item.0 == 'postgresql' else zabbix_gid }}"
+    mode: '0775'
+    recurse: true
+  loop: "{{ ['postgresql', 'server', 'web'] | product(['data', 'logs']) | list }}"
+  tags:
+    - zabbix
+
+- name: Ensure backups directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_data_dir }}/web/backups"
+    state: directory
+    mode: '0775'
+    recurse: true
+  tags:
+    - zabbix
+
+- name: Ensure alertscripts directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_data_dir }}/alertscripts"
+    state: directory
+    mode: '0755'
+  tags:
+    - zabbix
+
+- name: Ensure MIBs directory exists
+  ansible.builtin.file:
+    path: "{{ zabbix_mibs_base_dir }}"
+    state: directory
+    mode: '0755'
+  when: zabbix_custom_mibs | default(false)
+  tags:
+    - zabbix
+
+- name: Copy custom MIBs to host
+  ansible.builtin.copy:
+    src: "mibs/"
+    dest: "{{ zabbix_mibs_base_dir }}/"
+    mode: '0644'
+    directory_mode: '0755'
+  when: zabbix_custom_mibs | default(false)
+  tags:
+    - zabbix
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/zabbix.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/zabbix.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ zabbix_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+  tags:
+    - zabbix
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - zabbix
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+  tags:
+    - zabbix
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ zabbix_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - zabbix
+    - up
+
+- name: Build docker images
+  ansible.builtin.command: docker compose build
+  args:
+    chdir: "{{ zabbix_make_dir }}"
+  when: service_state != 'absent'
+  register: build_result
+  changed_when: "'Building' in build_result.stdout or 'Building' in build_result.stderr"
+  tags:
+    - zabbix
+    - up
+
+- name: Start/Stop zabbix service
+  community.docker.docker_compose_v2:
+    project_src: "{{ zabbix_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: zabbix_result
+  failed_when: zabbix_result.failed and "No resource found to remove" not in zabbix_result.msg
+  tags:
+    - zabbix
+    - up
+    - down
+    - restart

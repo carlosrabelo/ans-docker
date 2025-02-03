@@ -1,0 +1,40 @@
+---
+# Configurações do Portainer
+# Portainer é uma ferramenta de gerenciamento de containers Docker
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+portainer_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+portainer_data_dir: "/opt/data/portainer"
+portainer_make_dir: "/opt/make/portainer"
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+portainer_port_http: 9000
+portainer_port_https: 9443
+portainer_port_edge: 8000
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+portainer_container_name: portainer
+portainer_image: portainer/portainer-ce:latest
+portainer_restart_policy: unless-stopped
+portainer_service_name: portainer
+
+# =================================================================
+# CONFIGURAÇÕES DE VERSÃO
+# =================================================================
+
+portainer_version: "latest"

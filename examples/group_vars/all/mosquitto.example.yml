@@ -1,0 +1,39 @@
+---
+# Configurações do Mosquitto (MQTT Broker)
+# Mosquitto é um broker de mensagens MQTT para IoT
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+mosquitto_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+mosquitto_data_dir: "/opt/data/mosquitto"
+mosquitto_make_dir: "/opt/make/mosquitto"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+mosquitto_container_name: mosquitto-server
+mosquitto_restart_policy: unless-stopped
+mosquitto_service_name: mosquitto
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+mosquitto_port_mqtt: "1883"
+mosquitto_port_websocket: "8083"
+
+# =================================================================
+# CONFIGURAÇÕES DE AUTENTICAÇÃO
+# =================================================================
+
+mosquitto_admin_user: "admin"
+mosquitto_admin_password: "{{ vault_mosquitto_admin_password }}"

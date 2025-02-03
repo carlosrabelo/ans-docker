@@ -1,0 +1,30 @@
+---
+# Configurações do Nginx (Reverse Proxy)
+# Nginx serve como proxy reverso e balanceador de carga
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+nginx_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+nginx_data_dir: "/opt/data/nginx"
+nginx_make_dir: "/opt/make/nginx"
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+nginx_port_http: 80
+nginx_port_https: 443
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+nginx_restart_policy: unless-stopped

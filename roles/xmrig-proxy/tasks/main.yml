@@ -1,0 +1,32 @@
+---
+- name: Ensure xmrig-proxy make directory exists
+  ansible.builtin.file:
+    path: "{{ xmrig_proxy_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Dockerfile for xmrig-proxy
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ xmrig_proxy_make_dir }}/Dockerfile"
+    mode: '0644'
+
+- name: Generate docker-compose.yml for xmrig-proxy
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ xmrig_proxy_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Start/Stop xmrig-proxy service
+  community.docker.docker_compose_v2:
+    project_src: "{{ xmrig_proxy_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    build: always
+  register: xmrig_proxy_result
+  failed_when: xmrig_proxy_result.failed and "No resource found to remove" not in xmrig_proxy_result.msg
+  tags:
+    - xmrig-proxy
+    - up
+    - down
+    - restart

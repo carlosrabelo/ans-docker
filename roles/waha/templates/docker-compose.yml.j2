@@ -1,0 +1,30 @@
+services:
+  # App - Main Application
+  waha-app:
+    image: devlikeapro/waha:{{ waha_version | default('latest') }}
+    container_name: waha-app
+    restart: {{ waha_restart_policy }}
+    ports:
+      - "{{ waha_port }}:3000"
+    environment:
+      TZ: '{{ waha_timezone }}'
+      WAHA_DASHBOARD_PASSWORD: '{{ waha_dashboard_password }}'
+    volumes:
+      - {{ waha_data_dir }}/sessions:/app/.sessions
+      - {{ waha_data_dir }}/config:/app/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/sessions || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-waha
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-waha:
+    name: {{ ansible_hostname }}-net-waha

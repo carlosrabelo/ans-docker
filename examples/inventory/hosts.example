@@ -1,0 +1,13 @@
+[docker]
+# Servidor local - para desenvolvimento/testes
+# ansible_connection=local permite executar sem SSH
+localhost	ansible_connection=local
+
+# Servidores remotos - substitua IPs e usuários conforme necessário
+# ansible_host: endereço IP do servidor
+# ansible_user: usuário SSH para conexão
+# Exemplos abaixo devem ser ajustados para sua infraestrutura
+taranis		ansible_host=10.0.200.10	ansible_user=root
+d051		ansible_host=10.13.100.51	ansible_user=root
+v031		ansible_host=10.13.91.31	ansible_user=root
+v032		ansible_host=10.13.91.32	ansible_user=root

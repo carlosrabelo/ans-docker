@@ -1,0 +1,78 @@
+---
+- name: Ensure grafana data directory exists
+  ansible.builtin.file:
+    path: "{{ grafana_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure grafana subdirectories exist
+  ansible.builtin.file:
+    path: "{{ grafana_data_dir }}/{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: "472"
+    group: "472"
+  loop:
+    - var
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/grafana.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/grafana.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Ensure grafana make directory exists
+  ansible.builtin.file:
+    path: "{{ grafana_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Generate docker-compose.yml for grafana
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ grafana_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ grafana_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - grafana
+    - up
+
+- name: Start/Stop grafana service
+  community.docker.docker_compose_v2:
+    project_src: "{{ grafana_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: grafana_result
+  failed_when: grafana_result.failed and "No resource found to remove" not in grafana_result.msg
+  tags:
+    - grafana
+    - up
+    - down
+    - restart

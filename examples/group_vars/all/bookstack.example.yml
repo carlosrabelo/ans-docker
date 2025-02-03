@@ -1,0 +1,69 @@
+---
+# Configurações do Bookstack (wiki)
+# Bookstack é uma plataforma de documentação simples e intuitiva
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+bookstack_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DOMÍNIO
+# =================================================================
+
+bookstack_domain: "wiki.example.local"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+bookstack_data_dir: "/opt/data/bookstack"
+bookstack_make_dir: "/opt/make/bookstack"
+
+# =================================================================
+# CONFIGURAÇÕES DE USUÁRIOS (UID/GID)
+# =================================================================
+
+bookstack_app_gid: 1000
+bookstack_app_uid: 1000
+bookstack_db_gid: 1001
+bookstack_db_uid: 1001
+
+# =================================================================
+# CONFIGURAÇÕES DE BANCO DE DADOS (MariaDB)
+# =================================================================
+
+# Senhas sensíveis - consulte vault.yml para valores
+bookstack_mariadb_root_password: "{{ vault_bookstack_mariadb_root_password }}"
+bookstack_mariadb_password: "{{ vault_bookstack_mariadb_password }}"
+bookstack_mariadb_user: "bookstack"
+
+# =================================================================
+# CONFIGURAÇÕES DE AUTENTICAÇÃO (LDAP)
+# =================================================================
+
+bookstack_ldap_method: "standard"
+bookstack_ldap_server: "10.0.2.101:389"
+bookstack_ldap_version: "3"
+bookstack_ldap_base_dn: "DC=domain,DC=local"
+bookstack_ldap_dn: "wiki_account@domain.local"
+bookstack_ldap_user_filter: "(&(sAMAccountName={user}))"
+bookstack_ldap_id_attribute: "BIN;objectGUID"
+bookstack_ldap_email_attribute: "mail"
+bookstack_ldap_display_name_attribute: "displayName"
+bookstack_ldap_start_tls: "false"
+bookstack_ldap_pass: "{{ vault_bookstack_ldap_pass }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE APLICAÇÃO
+# =================================================================
+
+bookstack_app_key: "{{ vault_bookstack_app_key }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+bookstack_restart_policy: unless-stopped

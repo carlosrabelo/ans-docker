@@ -1,0 +1,25 @@
+---
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário padrão para todos os containers
+timezone: "America/Sao_Paulo"
+
+# =================================================================
+# CONFIGURAÇÕES DE CERTIFICADOS SSL
+# =================================================================
+
+ssl_cert_path: "/etc/mycerts"
+ssl_cert_file: "{{ ssl_cert_path }}/example.local.crt"
+ssl_key_file: "{{ ssl_cert_path }}/example.local.key"
+
+# Habilita verificação de certificado em localhost (útil para desenvolvimento)
+ssl_check_on_localhost: true
+
+# =================================================================
+# CONFIGURAÇÕES DE SISTEMA
+# =================================================================
+
+# Período de retenção de logs (dias)
+logs_retention_days: 30

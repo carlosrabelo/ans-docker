@@ -1,0 +1,26 @@
+---
+# Configurações do Minefarm
+# Aplicação personalizada para gerenciamento de farm
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+minefarm_data_dir: "/opt/data/minefarm"
+minefarm_make_dir: "/opt/make/minefarm"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+minefarm_container_name: minefarm
+minefarm_image: minefarm:latest
+
+# Mapeamento de portas (host:container)
+minefarm_port: "3544:80"
+
+# Política de reinicialização
+minefarm_restart_policy: unless-stopped
+
+# Caminho do Dockerfile customizado
+minefarm_dockerfile_path: "{{ inventory_dir }}/roles/minefarm/files/Dockerfile"

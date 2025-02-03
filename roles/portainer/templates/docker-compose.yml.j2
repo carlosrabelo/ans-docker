@@ -1,0 +1,30 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:{{ portainer_version | default('latest') }}
+    container_name: portainer
+    restart: {{ portainer_restart_policy }}
+    ports:
+      - "{{ portainer_port_http }}:9000"
+      - "{{ portainer_port_https }}:9443"
+      - "{{ portainer_port_edge }}:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - {{ portainer_data_dir }}/data:/data
+    networks:
+      - {{ ansible_hostname }}-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true

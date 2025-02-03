@@ -1,0 +1,126 @@
+# Novo SGA - Sistema de Gestão de Atendimento
+
+services:
+  # Database - MySQL
+  database:
+    image: mysql:8.0
+    container_name: novosga-mysql
+    restart: {{ novosga_restart_policy }}
+    environment:
+      MYSQL_ROOT_PASSWORD: '{{ novosga_mysql_root_password }}'
+      MYSQL_DATABASE: '{{ novosga_mysql_database }}'
+      MYSQL_USER: '{{ novosga_mysql_user }}'
+      MYSQL_PASSWORD: '{{ novosga_mysql_password }}'
+      TZ: '{{ novosga_timezone }}'
+    volumes:
+      - {{ novosga_data_dir }}/mysql:/var/lib/mysql
+    networks:
+      - {{ ansible_hostname }}-net-novosga
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Realtime - Mercure Hub
+  realtime:
+    image: novosga/mercure:v0.11
+    container_name: novosga-mercure
+    restart: {{ novosga_restart_policy }}
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: '{{ novosga_mercure_jwt_key }}'
+      MERCURE_SUBSCRIBER_JWT_KEY: '{{ novosga_mercure_jwt_key }}'
+      MERCURE_EXTRA_DIRECTIVES: 'anonymous 1; cors_origins *'
+    volumes:
+      - {{ novosga_data_dir }}/mercure/config:/config
+      - {{ novosga_data_dir }}/mercure/data:/data
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-novosga
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/.well-known/mercure || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # App - Main Application
+  app:
+    image: novosga/novosga:{{ novosga_version }}
+    container_name: novosga-novosga
+    restart: {{ novosga_restart_policy }}
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      # Application Settings
+      APP_ENV: '{{ novosga_app_env }}'
+      APP_LANGUAGE: '{{ novosga_app_language }}'
+      TZ: '{{ novosga_timezone }}'
+
+      # Database Configuration
+      DATABASE_URL: 'mysql://{{ novosga_mysql_user }}:{{ novosga_mysql_password }}@novosga-mysql:3306/{{ novosga_mysql_database }}?charset=utf8mb4&serverVersion=8.0'
+
+      # Admin User Configuration
+      NOVOSGA_ADMIN_USERNAME: '{{ novosga_admin_username }}'
+      NOVOSGA_ADMIN_PASSWORD: '{{ novosga_admin_password }}'
+      NOVOSGA_ADMIN_FIRSTNAME: '{{ novosga_admin_firstname }}'
+      NOVOSGA_ADMIN_LASTNAME: '{{ novosga_admin_lastname }}'
+
+      # Unity Configuration
+      NOVOSGA_UNITY_NAME: '{{ novosga_unity_name }}'
+      NOVOSGA_UNITY_CODE: '{{ novosga_unity_code }}'
+
+      # Priority Settings
+      NOVOSGA_NOPRIORITY_NAME: '{{ novosga_nopriority_name }}'
+      NOVOSGA_NOPRIORITY_DESCRIPTION: '{{ novosga_nopriority_description }}'
+      NOVOSGA_PRIORITY_NAME: '{{ novosga_priority_name }}'
+      NOVOSGA_PRIORITY_DESCRIPTION: '{{ novosga_priority_description }}'
+
+      # Place Configuration
+      NOVOSGA_PLACE_NAME: '{{ novosga_place_name }}'
+
+      # Mercure Integration
+      MERCURE_URL: '{{ novosga_mercure_url }}'
+      MERCURE_PUBLIC_URL: '{{ novosga_mercure_public_url }}'
+      MERCURE_JWT_SECRET: '{{ novosga_mercure_jwt_secret }}'
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-novosga
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Display - Attendance Panel
+  display:
+    image: novosga/panel-app:v2.1.0
+    container_name: novosga-panel-app
+    restart: {{ novosga_restart_policy }}
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      TZ: '{{ novosga_timezone }}'
+    networks:
+      - {{ ansible_hostname }}-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-novosga:
+    name: {{ ansible_hostname }}-net-novosga

@@ -1,0 +1,61 @@
+---
+# Arquivo de exemplo para variáveis sensíveis (vault)
+# ⚠️  COPIE ESTE ARQUIVO PARA group_vars/all/vault.yml E SUBSTITUA TODOS OS VALORES
+#
+# NÃO use valores de exemplo em produção!
+# NÃO faça commit do arquivo vault.yml no repositório
+#
+# Segurança recomendada:
+# - Use senhas com mínimo 16 caracteres
+# - Use gerador de senhas aleatórias
+# - Para chaves base64, use: openssl rand -base64 32
+
+# ============== Bookstack ==============
+# Senha root do MariaDB do Bookstack
+vault_bookstack_mariadb_root_password: "CHANGE_ME_BOOKSTACK_MARIADB_ROOT_PASSWORD_32_CHARS"
+
+# Senha do usuário MariaDB do Bookstack
+vault_bookstack_mariadb_password: "CHANGE_ME_BOOKSTACK_MARIADB_PASSWORD_32_CHARS"
+
+# Chave de aplicação do Bookstack (base64)
+# Gerar com: openssl rand -base64 32
+vault_bookstack_app_key: "base64:CHANGE_ME_32_CHAR_BASE64_KEY_HERE_GENERATE_WITH_OPENSSL"
+
+# Senha da conta LDAP do Bookstack
+vault_bookstack_ldap_pass: "CHANGE_ME_BOOKSTACK_LDAP_PASSWORD_24_CHARS"
+
+# ============== NovoSGA ==============
+# Senha root do MySQL do NovoSGA
+vault_novosga_mysql_root_password: "CHANGE_ME_NOVOSGA_MYSQL_ROOT_PASSWORD_32_CHARS"
+
+# Senha do usuário MySQL do NovoSGA
+vault_novosga_mysql_password: "CHANGE_ME_NOVOSGA_MYSQL_PASSWORD_32_CHARS"
+
+# Senha do administrador do NovoSGA (usada para primeiro login)
+vault_novosga_admin_password: "CHANGE_ME_NOVOSGA_ADMIN_PASSWORD_16_CHARS"
+
+# Chave JWT do Mercure (hub de mensagens em tempo real)
+vault_novosga_mercure_jwt_key: "CHANGE_ME_NOVOSGA_MERCURE_JWT_KEY_64_CHARS_RANDOM"
+
+# Segredo JWT do Mercure
+vault_novosga_mercure_jwt_secret: "CHANGE_ME_NOVOSGA_MERCURE_JWT_SECRET_64_CHARS_RANDOM"
+
+# ============== WAHA ==============
+# Senha do dashboard WAHA
+vault_waha_dashboard_password: "CHANGE_ME_WAHA_DASHBOARD_PASSWORD_24_CHARS"
+
+# ============== Zabbix ==============
+# Senha do banco de dados Zabbix
+vault_zabbix_db_password: "CHANGE_ME_ZABBIX_DB_PASSWORD_32_CHARS"
+
+# ============== XMRig ==============
+# Usuário do pool de mineração (formato depende do pool)
+vault_xmrig_pool_user: "CHANGE_ME_XMRIG_POOL_USER_ID_OR_WALLET_ADDRESS"
+
+# ============== XMRig Proxy ==============
+# Usuário do pool do XMRig Proxy (formato depende do pool)
+vault_xmrig_proxy_pool_user: "CHANGE_ME_XMRIG_PROXY_POOL_USER_ID_OR_WALLET_ADDRESS"
+
+# ============== Mosquitto ==============
+# Senha do administrador do broker MQTT
+vault_mosquitto_admin_password: "CHANGE_ME_MOSQUITTO_ADMIN_PASSWORD_24_CHARS"

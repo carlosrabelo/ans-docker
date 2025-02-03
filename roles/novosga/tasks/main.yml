@@ -1,0 +1,133 @@
+---
+- name: Ensure novosga data directory exists
+  ansible.builtin.file:
+    path: "{{ novosga_data_dir }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - novosga
+    - up
+
+- name: Ensure mysql directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ novosga_data_dir }}/mysql"
+    state: directory
+    owner: "{{ novosga_mysql_uid }}"
+    group: "{{ novosga_mysql_gid }}"
+    mode: '0775'
+    recurse: true
+  tags:
+    - novosga
+    - up
+
+- name: Ensure novosga app directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ novosga_data_dir }}/novosga"
+    state: directory
+    owner: "{{ novosga_uid }}"
+    group: "{{ novosga_gid }}"
+    mode: '0775'
+    recurse: true
+  tags:
+    - novosga
+    - up
+
+- name: Ensure mercure config directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ novosga_data_dir }}/mercure/config"
+    state: directory
+    owner: "{{ novosga_uid }}"
+    group: "{{ novosga_gid }}"
+    mode: '0775'
+    recurse: true
+  tags:
+    - novosga
+    - up
+
+- name: Ensure mercure data directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ novosga_data_dir }}/mercure/data"
+    state: directory
+    owner: "{{ novosga_uid }}"
+    group: "{{ novosga_gid }}"
+    mode: '0775'
+    recurse: true
+  tags:
+    - novosga
+    - up
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/novosga.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/novosga.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Ensure novosga make directory exists
+  ansible.builtin.file:
+    path: "{{ novosga_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ novosga_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+  tags:
+    - novosga
+    - up
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ novosga_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - novosga
+    - up
+
+- name: Start/Stop novosga service
+  community.docker.docker_compose_v2:
+    project_src: "{{ novosga_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: novosga_result
+  failed_when: novosga_result.failed and "No resource found to remove" not in novosga_result.msg
+  tags:
+    - novosga
+    - up
+    - down
+    - restart
+
+- name: Run novosga install
+  ansible.builtin.command: >
+    docker exec novosga-novosga
+    php /var/www/html/bin/console novosga:install --no-interaction
+  when: service_state | default('present') == 'present'
+  register: novosga_install
+  changed_when: "'has been installed' in novosga_install.stdout"
+  tags:
+    - novosga
+    - up

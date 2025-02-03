@@ -1,0 +1,41 @@
+---
+- name: Ensure service base directory exists
+  ansible.builtin.file:
+    path: "{{ base_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure subdirectories exist
+  ansible.builtin.file:
+    path: "{{ base_dir }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ base_subdirs | default(['logs']) }}"
+  when: base_subdirs is defined
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ base_network_name }}
+  register: network_check
+  failed_when: false
+  changed_when: false
+  when: base_create_network | bool
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ base_network_name }}
+  when: base_create_network | bool and network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ base_dir }}"
+  when: base_service_state != 'absent' and base_pull_images | bool
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+
+- name: Start/Stop service
+  community.docker.docker_compose_v2:
+    project_src: "{{ base_dir }}"
+    state: "{{ base_service_state }}"
+    pull: missing
+  register: result
+  failed_when: result.failed and "No resource found to remove" not in result.msg

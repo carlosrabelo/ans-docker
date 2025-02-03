@@ -1,0 +1,91 @@
+---
+# Configurações do NovoSGA
+# Sistema de gestão de atendimento ao público
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+novosga_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DOMÍNIO
+# =================================================================
+
+novosga_domain: "novosga.example.local"
+novosga_panel_domain: "novosgap.example.local"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+novosga_data_dir: "/opt/data/novosga"
+novosga_make_dir: "/opt/make/novosga"
+
+# =================================================================
+# CONFIGURAÇÕES DE USUÁRIOS (UID/GID)
+# =================================================================
+
+novosga_uid: 1000
+novosga_gid: 1000
+novosga_mysql_uid: 999
+novosga_mysql_gid: 999
+
+# =================================================================
+# CONFIGURAÇÕES DE ADMINISTRADOR
+# =================================================================
+
+novosga_admin_username: "admin"
+novosga_admin_password: "{{ vault_novosga_admin_password }}"
+novosga_admin_firstname: "Administrador"
+novosga_admin_lastname: "Global"
+
+# =================================================================
+# CONFIGURAÇÕES DE PRIORIDADE DE ATENDIMENTO
+# =================================================================
+
+novosga_nopriority_name: "Normal"
+novosga_nopriority_description: "Atendimento normal"
+novosga_priority_name: "Prioridade"
+novosga_priority_description: "Atendimento prioritário"
+novosga_place_name: "Guichê"
+
+# =================================================================
+# CONFIGURAÇÕES DE UNIDADE
+# =================================================================
+
+novosga_unity_name: "Minha unidade"
+novosga_unity_code: "U01"
+
+# =================================================================
+# CONFIGURAÇÕES DE BANCO DE DADOS (MySQL)
+# =================================================================
+
+novosga_mysql_root_password: "{{ vault_novosga_mysql_root_password }}"
+novosga_mysql_database: "novosga2"
+novosga_mysql_user: "novosga"
+novosga_mysql_password: "{{ vault_novosga_mysql_password }}"
+
+# =================================================================
+# CONFIGURAÇÕES DO MERCURE (Hub de Mensagens)
+# =================================================================
+
+novosga_mercure_url: "http://novosga-mercure/.well-known/mercure"
+novosga_mercure_public_url: "http://novosga-panel-app/.well-known/mercure"
+novosga_mercure_jwt_key: "{{ vault_novosga_mercure_jwt_key }}"
+novosga_mercure_jwt_secret: "{{ vault_novosga_mercure_jwt_secret }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE APLICAÇÃO
+# =================================================================
+
+novosga_app_env: "prod"
+novosga_app_language: "pt_BR"
+novosga_version: "2.2"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+novosga_restart_policy: unless-stopped

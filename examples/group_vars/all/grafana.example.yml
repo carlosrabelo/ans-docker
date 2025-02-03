@@ -1,0 +1,61 @@
+---
+# Configurações do Grafana
+# Grafana é uma plataforma de visualização de métricas e dashboards
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+grafana_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+grafana_data_dir: "/opt/data/grafana"
+grafana_make_dir: "/opt/make/grafana"
+
+# =================================================================
+# CONFIGURAÇÕES DE USUÁRIOS (UID/GID)
+# =================================================================
+
+grafana_uid: 472
+grafana_gid: 472
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+grafana_container_name: grafana-server
+grafana_image: grafana/grafana:11.1.3
+grafana_restart_policy: unless-stopped
+grafana_service_name: grafana
+grafana_network_name: "{{ ansible_hostname }}-net"
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+grafana_port: 3000
+
+# =================================================================
+# CONFIGURAÇÕES DE ACESSO
+# =================================================================
+
+grafana_server_domain: "grafana.example.local"
+grafana_server_root_url: "https://grafana.example.local/"
+
+# =================================================================
+# CONFIGURAÇÕES DE PLUGINS
+# =================================================================
+
+grafana_install_plugins: "alexanderzobnin-zabbix-app 5.0.4"
+
+# =================================================================
+# CONFIGURAÇÕES DE REDE
+# =================================================================
+
+grafana_enable_gzip: "true"
+grafana_rendering_server_url: ""
+grafana_log_mode: "console"

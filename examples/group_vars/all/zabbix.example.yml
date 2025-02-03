@@ -1,0 +1,54 @@
+---
+# Configurações do Zabbix
+# Plataforma de monitoramento de TI
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+zabbix_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+zabbix_data_dir: "/opt/data/zabbix"
+zabbix_make_dir: "/opt/make/zabbix"
+zabbix_mibs_base_dir: "{{ zabbix_data_dir }}/mibs"
+
+# =================================================================
+# CONFIGURAÇÕES DE USUÁRIOS (UID/GID)
+# =================================================================
+
+zabbix_uid: 1997
+zabbix_gid: 1995
+zabbix_db_uid: 999
+zabbix_db_gid: 999
+
+# =================================================================
+# CONFIGURAÇÕES DE BANCO DE DADOS
+# =================================================================
+
+zabbix_db_user: "zabbix"
+zabbix_db_password: "{{ vault_zabbix_db_password }}"
+zabbix_db_name: "zabbix"
+
+# =================================================================
+# CONFIGURAÇÕES DE PERFORMANCE
+# =================================================================
+
+zabbix_cache_size: "64M"
+zabbix_start_pingers: 5
+
+# =================================================================
+# CONFIGURAÇÕES DE SNMP/MIBs
+# =================================================================
+
+zabbix_custom_mibs: true
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+zabbix_restart_policy: unless-stopped

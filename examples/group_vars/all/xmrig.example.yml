@@ -1,0 +1,37 @@
+---
+# Configurações do XMRig
+# Minerador de criptomoedas (algoritmo RandomX)
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+xmrig_make_dir: "/opt/make/xmrig"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+xmrig_container_name: xmrig-app
+xmrig_image: xmrig:latest
+xmrig_restart_policy: unless-stopped
+xmrig_service_name: xmrig
+
+# =================================================================
+# CONFIGURAÇÕES DE MINERAÇÃO
+# =================================================================
+
+xmrig_algorithm: rx/0
+xmrig_threads: 2
+xmrig_version: "v6.21.2"
+
+# Configurações do pool
+xmrig_pool_url: "xmrig.nanswap.com:3333"
+xmrig_pool_user: "{{ vault_xmrig_pool_user }}"
+xmrig_pool_pass: "x"
+
+# =================================================================
+# CONFIGURAÇÕES DE BUILD
+# =================================================================
+
+xmrig_dockerfile_path: "{{ inventory_dir }}/roles/xmrig/files/Dockerfile"

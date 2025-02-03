@@ -1,0 +1,33 @@
+---
+# Configurações do Dockhand
+# Dockhand é uma interface moderna de gerenciamento Docker com recursos de:
+# - Gerenciamento de containers em tempo real
+# - Editor visual para Docker Compose
+# - Integração com Git para deploy de stacks
+# - Terminal e logs em tempo real
+# - File browser para containers
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+dockhand_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+dockhand_data_dir: "/opt/data/dockhand"
+dockhand_make_dir: "/opt/make/dockhand"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+dockhand_container_name: dockhand
+dockhand_image: fnsys/dockhand:latest
+dockhand_network_name: "{{ ansible_hostname }}-net"
+dockhand_port: "3000"
+dockhand_restart_policy: unless-stopped
+dockhand_service_name: dockhand

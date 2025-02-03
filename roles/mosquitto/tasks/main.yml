@@ -1,0 +1,101 @@
+---
+- name: Ensure mosquitto data directory exists
+  ansible.builtin.file:
+    path: "{{ mosquitto_data_dir }}"
+    state: directory
+    mode: '0755'
+  when: service_state != 'absent'
+
+- name: Ensure mosquitto subdirectories exist
+  ansible.builtin.file:
+    path: "{{ mosquitto_data_dir }}/{{ item }}"
+    state: directory
+    owner: "1883" # Mosquitto user ID
+    group: "1883"
+    mode: '0775'
+  loop:
+    - data
+    - log
+  when: service_state != 'absent'
+
+- name: Copy mosquitto configuration
+  ansible.builtin.copy:
+    src: mosquitto.conf
+    dest: "{{ mosquitto_data_dir }}/mosquitto.conf"
+    mode: '0644'
+  when: service_state != 'absent'
+
+- name: Check if password file exists
+  ansible.builtin.stat:
+    path: "{{ mosquitto_data_dir }}/passwd"
+  register: passwd_file
+  when: service_state != 'absent'
+
+- name: Create empty passwd file so Docker mounts it as a file
+  ansible.builtin.file:
+    path: "{{ mosquitto_data_dir }}/passwd"
+    state: touch
+    mode: '0600'
+    owner: "1883"
+    group: "1883"
+  when: service_state != 'absent' and not passwd_file.stat.exists
+
+- name: Create mosquitto password file with admin user
+  ansible.builtin.command: >
+    docker run --rm -v {{ mosquitto_data_dir }}/passwd:/mosquitto/config/passwd
+    eclipse-mosquitto:2.0.18
+    mosquitto_passwd -b /mosquitto/config/passwd {{ mosquitto_admin_user | default('admin') }} {{ mosquitto_admin_password | default('admin') }}
+  when: service_state != 'absent' and not passwd_file.stat.exists
+
+- name: Ensure mosquitto make directory exists
+  ansible.builtin.file:
+    path: "{{ mosquitto_make_dir }}"
+    state: directory
+    mode: '0755'
+  when: service_state != 'absent'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ mosquitto_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+  when: service_state != 'absent'
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+  when: service_state != 'absent'
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: service_state != 'absent' and network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ mosquitto_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - mosquitto
+    - up
+
+- name: Start/Stop mosquitto service
+  community.docker.docker_compose_v2:
+    project_src: "{{ mosquitto_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: mosquitto_result
+  failed_when: >-
+    mosquitto_result.failed and
+    "No resource found to remove" not in mosquitto_result.msg and
+    "is not a directory" not in mosquitto_result.msg
+  tags:
+    - mosquitto
+    - up
+    - down
+    - restart

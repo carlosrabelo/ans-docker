@@ -1,0 +1,86 @@
+---
+- name: Ensure bookstack data directory exists
+  ansible.builtin.file:
+    path: "{{ bookstack_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure database directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ bookstack_data_dir }}/database"
+    state: directory
+    owner: "{{ bookstack_db_uid }}"
+    group: "{{ bookstack_db_gid }}"
+    mode: '0775'
+    recurse: true
+
+- name: Ensure config directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ bookstack_data_dir }}/config"
+    state: directory
+    owner: "{{ bookstack_app_uid }}"
+    group: "{{ bookstack_app_gid }}"
+    mode: '0775'
+    recurse: true
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/bookstack.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/bookstack.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Ensure bookstack make directory exists
+  ansible.builtin.file:
+    path: "{{ bookstack_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ bookstack_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ bookstack_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - bookstack
+    - up
+
+- name: Start/Stop bookstack service
+  community.docker.docker_compose_v2:
+    project_src: "{{ bookstack_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: bookstack_result
+  failed_when: bookstack_result.failed and "No resource found to remove" not in bookstack_result.msg
+  tags:
+    - bookstack
+    - up
+    - down
+    - restart

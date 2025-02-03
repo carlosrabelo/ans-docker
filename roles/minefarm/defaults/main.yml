@@ -1,0 +1,3 @@
+---
+# Variáveis Minefarm agora estão centralizadas em inventory/group_vars/all.yml
+# Este arquivo é mantido para compatibilidade e futuras variáveis específicas

@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        XMRIG_VERSION: {{ xmrig_version }}
+    image: xmrig:mini-latest
+    container_name: {{ xmrig_container_name }}
+    restart: {{ xmrig_restart_policy }}
+    networks:
+      - {{ ansible_hostname }}-net
+    user: xmrig
+    working_dir: /work
+    command: ["-k", "-a", "{{ xmrig_algorithm }}", "-o", "{{ xmrig_pool_url }}", "-u", "{{ xmrig_pool_user }}", "-p", "{{ xmrig_pool_pass }}", "-t", "{{ xmrig_threads }}"]
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true

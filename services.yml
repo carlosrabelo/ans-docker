@@ -1,0 +1,31 @@
+---
+- hosts: all
+  become: true
+  vars:
+    service_state: "{{ ansible_service_state | default('present') }}"
+  roles:
+    # Infraestrutura Base (primeiro)
+    - { role: nginx,       tags: ['d051', 'nginx'       ] }
+
+    # Serviços de Monitoramento (dependem de nginx)
+    - { role: grafana,     tags: ['d051', 'grafana'     ] }
+    - { role: portainer,   tags: ['d051', 'portainer'   ] }
+    - { role: dockhand,    tags: ['d051', 'dockhand'    ] }
+    - { role: zabbix,      tags: ['d051', 'zabbix'      ] }
+    - { role: tatuscan,    tags: ['d051', 'tatuscan'    ] }
+
+    # Serviços de Aplicação (dependem de nginx)
+    - { role: bookstack,   tags: ['d051', 'bookstack'   ] }
+    - { role: site1,       tags: ['d051', 'site1'       ] }
+    - { role: site2,       tags: ['d051', 'site2'       ] }
+    - { role: novosga,     tags: ['d051', 'novosga'     ] }
+    - { role: mosquitto,   tags: ['d051', 'mosquitto'   ] }
+
+    # Serviços de Mineração (V001)
+    - { role: minefarm,    tags: ['V001', 'minefarm'    ] }
+    - { role: xmrig,       tags: ['V001', 'xmrig'       ] }
+    - { role: xmrig-proxy, tags: ['V001', 'xmrig-proxy' ] }
+
+    # Apps & Workers (V001)
+    - { role: waha,        tags: ['V001', 'waha'        ] }
+    - { role: minidlna,    tags: ['V001', 'minidlna'    ] }

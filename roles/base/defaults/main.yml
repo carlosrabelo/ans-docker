@@ -1,0 +1,5 @@
+---
+base_service_state: "{{ service_state | default('present') }}"
+base_pull_images: true
+base_create_network: true
+base_network_name: "{{ ansible_hostname }}-net"

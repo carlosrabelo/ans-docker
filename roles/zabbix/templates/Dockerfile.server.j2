@@ -1,0 +1,11 @@
+FROM zabbix/zabbix-server-pgsql:ubuntu-7.4.5
+
+USER root
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+USER 1997

@@ -1,0 +1,6 @@
+[docker]
+localhost	ansible_connection=local
+taranis		ansible_host=10.0.200.10	ansible_user=root
+d051		ansible_host=10.13.100.51	ansible_user=root
+v031		ansible_host=10.13.91.31	ansible_user=root
+v032		ansible_host=10.13.91.32	ansible_user=root

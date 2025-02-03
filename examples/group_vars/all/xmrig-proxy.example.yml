@@ -1,0 +1,52 @@
+---
+# Configurações do XMRig Proxy
+# Proxy para XMRig (minerador de criptomoedas)
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+xmrig_proxy_make_dir: "/opt/make/xmrig-proxy"
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+xmrig_proxy_container_name: xmrig-proxy-app
+xmrig_proxy_image: xmrig-proxy:latest
+xmrig_proxy_restart_policy: unless-stopped
+xmrig_proxy_service_name: xmrig-proxy
+
+# =================================================================
+# CONFIGURAÇÕES DE VERSÃO
+# =================================================================
+
+xmrig_proxy_version: "v6.21.0"
+
+# =================================================================
+# CONFIGURAÇÕES DE MINERAÇÃO
+# =================================================================
+
+xmrig_proxy_pool_url: "rx.unmineable.com:443"
+xmrig_proxy_pool_user: "{{ vault_xmrig_proxy_pool_user }}"
+xmrig_proxy_pool_pass: "x"
+xmrig_proxy_donate_level: "1"
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+xmrig_proxy_port: "3333"
+
+# =================================================================
+# CONFIGURAÇÕES DE TLS
+# =================================================================
+
+xmrig_proxy_tls_enabled: "false"
+xmrig_proxy_tls_fingerprint: ""
+
+# =================================================================
+# CONFIGURAÇÕES DE BUILD
+# =================================================================
+
+xmrig_proxy_dockerfile_path: "{{ inventory_dir }}/roles/xmrig-proxy/files/Dockerfile"

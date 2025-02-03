@@ -1,0 +1,64 @@
+---
+- name: Ensure minefarm data directory exists
+  ansible.builtin.file:
+    path: "{{ minefarm_data_dir }}/html"
+    state: directory
+    mode: '0755'
+
+- name: Ensure minefarm make directory exists
+  ansible.builtin.file:
+    path: "{{ minefarm_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Dockerfile for minefarm
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ minefarm_make_dir }}/Dockerfile"
+    mode: '0644'
+
+- name: Copy Apache configuration for minefarm
+  ansible.builtin.copy:
+    src: apache-config.conf
+    dest: "{{ minefarm_data_dir }}/apache-config.conf"
+    mode: '0644'
+
+- name: Copy source code for minefarm
+  ansible.builtin.copy:
+    src: src/
+    dest: "{{ minefarm_data_dir }}/html/"
+    mode: '0644'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ minefarm_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Create network for minefarm
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ minefarm_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+
+- name: Start/Stop minefarm service
+  community.docker.docker_compose_v2:
+    project_src: "{{ minefarm_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: minefarm_result
+  failed_when: minefarm_result.failed and "No resource found to remove" not in minefarm_result.msg
+

@@ -1,0 +1,6 @@
+---
+- name: reload nginx
+  ansible.builtin.command: docker exec nginx-proxy nginx -s reload
+  ignore_errors: true
+  register: nginx_reload_result
+  changed_when: nginx_reload_result.rc == 0

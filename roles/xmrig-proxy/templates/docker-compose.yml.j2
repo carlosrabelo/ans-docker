@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        XMRIG_PROXY_VERSION: {{ xmrig_proxy_version }}
+    image: xmrig-proxy:mini-latest
+    container_name: {{ xmrig_proxy_container_name }}
+    restart: {{ xmrig_proxy_restart_policy }}
+    ports:
+      - "{{ xmrig_proxy_port }}:{{ xmrig_proxy_port }}"
+    environment:
+      - POOL_URL={{ xmrig_proxy_pool_url }}
+      - POOL_USER={{ xmrig_proxy_pool_user }}
+      - POOL_PASS={{ xmrig_proxy_pool_pass }}
+      - DONATE_LEVEL={{ xmrig_proxy_donate_level }}
+      - TLS_ENABLED={{ xmrig_proxy_tls_enabled }}
+      - TLS_FINGERPRINT={{ xmrig_proxy_tls_fingerprint }}
+      - PROXY_PORT={{ xmrig_proxy_port }}
+    networks:
+      - {{ ansible_hostname }}-net
+    user: xmrig-proxy
+    working_dir: /work
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true

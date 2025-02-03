@@ -1,0 +1,32 @@
+services:
+  site2-app:
+    build: .
+    container_name: site2-app
+    restart: {{ site2_restart_policy }}
+    expose:
+      - "80"
+    environment:
+      TZ: '{{ site2_timezone }}'
+      SITE2_BASE_DIR: '{{ site2_data_dir }}'
+    volumes:
+      - {{ site2_data_dir }}/www:/usr/share/nginx/html
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-site2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-site2:
+    name: {{ ansible_hostname }}-net-site2

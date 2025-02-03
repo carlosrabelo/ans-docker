@@ -1,0 +1,21 @@
+services:
+  minidlna:
+    image: {{ minidlna_image }}
+    container_name: {{ minidlna_container_name }}
+    restart: {{ minidlna_restart_policy }}
+    network_mode: host
+    environment:
+      TZ: {{ minidlna_timezone }}
+      PUID: {{ minidlna_uid }}
+      PGID: {{ minidlna_gid }}
+      MINIDLNA_MEDIA_DIR: A,/media
+      MINIDLNA_FRIENDLY_NAME: {{ minidlna_friendly_name }}
+      MINIDLNA_NOTIFY_INTERVAL: {{ minidlna_notify_interval }}
+    volumes:
+      - {{ minidlna_media_dir }}:/media
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

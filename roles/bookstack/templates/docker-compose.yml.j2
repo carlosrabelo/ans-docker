@@ -1,0 +1,79 @@
+services:
+  # Application - BookStack Service
+  bookstack-app:
+    image: lscr.io/linuxserver/bookstack:latest
+    container_name: bookstack-app
+    restart: {{ bookstack_restart_policy }}
+    environment:
+      TZ: '{{ bookstack_timezone }}'
+      PUID: '{{ bookstack_app_uid }}'
+      PGID: '{{ bookstack_app_gid }}'
+      APP_URL: 'https://{{ bookstack_domain }}'
+      APP_KEY: '{{ bookstack_app_key }}'
+      DB_HOST: bookstack-database
+      DB_PORT: 3306
+      DB_DATABASE: bookstack
+      DB_USERNAME: bookstack
+      DB_PASSWORD: '{{ bookstack_mariadb_password }}'
+      AUTH_METHOD: ldap
+      LDAP_SERVER: '{{ bookstack_ldap_server }}'
+      LDAP_BASE_DN: '{{ bookstack_ldap_base_dn }}'
+      LDAP_DN: '{{ bookstack_ldap_dn }}'
+      LDAP_PASS: '{{ bookstack_ldap_pass }}'
+      LDAP_VERSION: '{{ bookstack_ldap_version }}'
+      LDAP_USER_FILTER: '{{ bookstack_ldap_user_filter }}'
+      LDAP_ID_ATTRIBUTE: '{{ bookstack_ldap_id_attribute }}'
+      LDAP_EMAIL_ATTRIBUTE: '{{ bookstack_ldap_email_attribute }}'
+      LDAP_DISPLAY_NAME_ATTRIBUTE: '{{ bookstack_ldap_display_name_attribute }}'
+      LDAP_START_TLS: '{{ bookstack_ldap_start_tls }}'
+    volumes:
+      - {{ bookstack_data_dir }}/config:/config
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-bookstack
+    depends_on:
+      bookstack-database:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Database - MariaDB Service
+  bookstack-database:
+    image: mariadb:10.11
+    container_name: bookstack-database
+    restart: {{ bookstack_restart_policy }}
+    environment:
+      TZ: '{{ bookstack_timezone }}'
+      MARIADB_ROOT_PASSWORD: '{{ bookstack_mariadb_root_password }}'
+      MARIADB_DATABASE: bookstack
+      MARIADB_USER: bookstack
+      MARIADB_PASSWORD: '{{ bookstack_mariadb_password }}'
+    volumes:
+      - {{ bookstack_data_dir }}/database:/var/lib/mysql
+    networks:
+      - {{ ansible_hostname }}-net-bookstack
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-bookstack:
+    name: {{ ansible_hostname }}-net-bookstack

@@ -1,0 +1,74 @@
+---
+- name: Ensure portainer data directory exists
+  ansible.builtin.file:
+    path: "{{ portainer_data_dir }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - portainer
+    - up
+
+- name: Ensure data subdirectory exists
+  ansible.builtin.file:
+    path: "{{ portainer_data_dir }}/data"
+    state: directory
+    mode: '0755'
+  tags:
+    - portainer
+    - up
+
+- name: Ensure portainer make directory exists
+  ansible.builtin.file:
+    path: "{{ portainer_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ portainer_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+  tags:
+    - portainer
+    - up
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - portainer
+    - up
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+  tags:
+    - portainer
+    - up
+
+- name: Pull docker images
+  ansible.builtin.command: docker compose pull
+  args:
+    chdir: "{{ portainer_make_dir }}"
+  when: service_state != 'absent'
+  register: pull_result
+  changed_when: "'Downloaded' in pull_result.stdout"
+  tags:
+    - portainer
+    - up
+
+- name: Start/Stop portainer service
+  community.docker.docker_compose_v2:
+    project_src: "{{ portainer_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    pull: missing
+  register: portainer_result
+  failed_when: portainer_result.failed and "No resource found to remove" not in portainer_result.msg
+  tags:
+    - portainer
+    - up
+    - down
+    - restart

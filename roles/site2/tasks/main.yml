@@ -1,0 +1,78 @@
+---
+- name: Ensure site2 data directory exists
+  ansible.builtin.file:
+    path: "{{ site2_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure www subdirectory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ site2_data_dir }}/www"
+    state: directory
+    owner: "{{ site2_uid }}"
+    group: "{{ site2_gid }}"
+    mode: '0775'
+    recurse: true
+
+- name: Copy index.html
+  ansible.builtin.copy:
+    src: index.html
+    dest: "{{ site2_data_dir }}/www/index.html"
+    mode: '0644'
+
+- name: Ensure site2 make directory exists
+  ansible.builtin.file:
+    path: "{{ site2_make_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Dockerfile
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ site2_make_dir }}/Dockerfile"
+    mode: '0644'
+
+- name: Copy nginx configuration
+  ansible.builtin.copy:
+    src: "nginx/site2.conf"
+    dest: "{{ nginx_data_dir }}/conf.d/"
+    mode: '0644'
+  when: service_state == 'present'
+  notify: reload nginx
+
+- name: Remove nginx configuration
+  ansible.builtin.file:
+    path: "{{ nginx_data_dir }}/conf.d/site2.conf"
+    state: absent
+  when: service_state == 'absent'
+  notify: reload nginx
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ site2_make_dir }}/docker-compose.yml"
+    mode: '0644'
+    force: true
+
+- name: Check if docker network exists
+  ansible.builtin.command: docker network inspect {{ ansible_hostname }}-net
+  register: network_check
+  failed_when: false
+  changed_when: false
+
+- name: Create external docker network
+  ansible.builtin.command: docker network create {{ ansible_hostname }}-net
+  when: network_check.rc != 0
+
+- name: Start/Stop site2 service
+  community.docker.docker_compose_v2:
+    project_src: "{{ site2_make_dir }}"
+    state: "{{ service_state | default('present') }}"
+    build: always
+  register: site2_result
+  failed_when: site2_result.failed and "No resource found to remove" not in site2_result.msg
+  tags:
+    - site2
+    - up
+    - down
+    - restart

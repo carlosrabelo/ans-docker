@@ -1,0 +1,45 @@
+---
+# Configurações do Tatuscan
+# Aplicação de scan personalizada
+
+# =================================================================
+# CONFIGURAÇÕES BÁSICAS
+# =================================================================
+
+# Fuso horário (herda do timezone global)
+tatuscan_timezone: "{{ timezone }}"
+
+# =================================================================
+# CONFIGURAÇÕES DE DIRETÓRIOS
+# =================================================================
+
+tatuscan_data_dir: "/opt/data/tatuscan"
+tatuscan_make_dir: "/opt/make/tatuscan"
+
+# =================================================================
+# CONFIGURAÇÕES DE USUÁRIOS (UID/GID)
+# =================================================================
+
+tatuscan_uid: 1000
+tatuscan_gid: 1000
+
+# =================================================================
+# CONFIGURAÇÕES DE PORTAS
+# =================================================================
+
+tatuscan_port: 8040
+
+# =================================================================
+# CONFIGURAÇÕES DE CONTAINER
+# =================================================================
+
+tatuscan_container_name: tatuscan-server
+tatuscan_image: tatuscan:latest
+tatuscan_restart_policy: unless-stopped
+tatuscan_service_name: tatuscan
+
+# =================================================================
+# CONFIGURAÇÕES DE VERSÃO
+# =================================================================
+
+tatuscan_version: "latest"

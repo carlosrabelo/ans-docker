@@ -1,0 +1,33 @@
+services:
+  tatuscan-app:
+    image: carlosrabelo/tatuscand:{{ tatuscan_version }}
+    container_name: tatuscan-app
+    restart: {{ tatuscan_restart_policy }}
+    ports:
+      - "{{ tatuscan_port }}:8040"
+    environment:
+      TZ: '{{ tatuscan_timezone }}'
+      TATUSCAN_BASE_DIR: '{{ tatuscan_data_dir }}'
+      TATUSCAN_PORT: '{{ tatuscan_port }}'
+    volumes:
+      - {{ tatuscan_data_dir }}/data:/data
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-tatuscan
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"TATUSCAN_PORT\",\"8040\")}/api/health'); print('ok')" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-tatuscan:
+    name: {{ ansible_hostname }}-net-tatuscan

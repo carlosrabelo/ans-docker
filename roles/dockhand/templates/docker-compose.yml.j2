@@ -1,0 +1,32 @@
+services:
+  {{ dockhand_container_name }}:
+    image: {{ dockhand_image }}
+    container_name: {{ dockhand_container_name }}
+    restart: {{ dockhand_restart_policy }}
+    ports:
+      - {{ dockhand_port }}:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dockhand_data:/app/data
+    networks:
+      - {{ dockhand_network_name }}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+networks:
+  {{ dockhand_network_name }}:
+    name: {{ dockhand_network_name }}
+    external: true
+
+volumes:
+  dockhand_data:
+    name: dockhand_data

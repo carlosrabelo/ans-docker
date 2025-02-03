@@ -1,0 +1,135 @@
+services:
+  # Database - PostgreSQL Service
+  zabbix-postgresql:
+    image: postgres:13.5
+    container_name: zabbix-postgresql
+    restart: {{ zabbix_restart_policy }}
+    environment:
+      POSTGRES_USER: {{ zabbix_db_user }}
+      POSTGRES_PASSWORD: {{ zabbix_db_password }}
+      POSTGRES_DB: {{ zabbix_db_name }}
+      TZ: {{ zabbix_timezone }}
+    volumes:
+      - {{ zabbix_data_dir }}/postgresql/data:/var/lib/postgresql/data
+      - {{ zabbix_data_dir }}/postgresql/logs:/var/log/postgresql
+    networks:
+      - {{ ansible_hostname }}-net-zabbix
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ zabbix_db_user }}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  zabbix-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: zabbix-server
+    restart: {{ zabbix_restart_policy }}
+    ports:
+      - "10051:10051"
+    depends_on:
+      zabbix-postgresql:
+        condition: service_healthy
+    environment:
+      DB_SERVER_HOST: zabbix-postgresql
+      POSTGRES_USER: {{ zabbix_db_user }}
+      POSTGRES_PASSWORD: {{ zabbix_db_password }}
+      POSTGRES_DB: {{ zabbix_db_name }}
+      ZBX_CACHESIZE: {{ zabbix_cache_size }}
+      ZBX_FPING_LOCATION: /usr/bin/fping
+      ZBX_FPING6_LOCATION: /usr/bin/fping6
+      ZBX_STARTPINGERS: "{{ zabbix_start_pingers }}"
+      ZBX_STARTPOLLERS: "10"
+      ZBX_STARTPOLLERSUNREACHABLE: "2"
+      ZBX_STARTTRAPPERS: "10"
+      ZBX_STARTDISCOVERERS: "1"
+      ZBX_STARTSNMPTRAPPER: "1"
+      ZBX_TIMEOUT: "10"
+      ZBX_DEBUGLEVEL: "2"
+      # Desativar processos desnecessários
+      ZBX_STARTIPMIPOLLERS: "0"
+      ZBX_STARTJAVAPOLLERS: "0"
+      ZBX_STARTVMWARECOLLECTORS: "0"
+      ZBX_STARTODBCPOLLERS: "0"
+      TZ: {{ zabbix_timezone }}
+    volumes:
+      - {{ zabbix_data_dir }}/server/data:/var/lib/zabbix
+      - {{ zabbix_data_dir }}/server/logs:/var/log/zabbix
+      - {{ zabbix_data_dir }}/alertscripts:/usr/lib/zabbix/alertscripts
+{% if zabbix_custom_mibs | default(false) %}
+      - {{ zabbix_mibs_base_dir }}:/var/lib/mibs:ro
+{% endif %}
+    networks:
+      - {{ ansible_hostname }}-net
+      - {{ ansible_hostname }}-net-zabbix
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          memory: 512M
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ping_group_range: "0 2147483647"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/10051'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:ubuntu-7.4.5
+    container_name: zabbix-web
+    restart: {{ zabbix_restart_policy }}
+    depends_on:
+      zabbix-postgresql:
+        condition: service_healthy
+      zabbix-server:
+        condition: service_healthy
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      DB_SERVER_HOST: zabbix-postgresql
+      POSTGRES_USER: {{ zabbix_db_user }}
+      POSTGRES_PASSWORD: {{ zabbix_db_password }}
+      POSTGRES_DB: {{ zabbix_db_name }}
+      TZ: {{ zabbix_timezone }}
+      PHP_TZ: {{ zabbix_timezone }}
+    volumes:
+      - {{ zabbix_data_dir }}/web/backups:/var/backups/zabbix
+      - {{ zabbix_data_dir }}/web/data:/var/www/html
+      - {{ zabbix_data_dir }}/web/logs:/var/log/nginx
+    networks:
+      - {{ ansible_hostname }}-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
+  {{ ansible_hostname }}-net-zabbix:
+    name: {{ ansible_hostname }}-net-zabbix

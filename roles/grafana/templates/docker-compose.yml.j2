@@ -1,0 +1,35 @@
+services:
+  {{ grafana_container_name }}:
+    image: {{ grafana_image }}
+    container_name: {{ grafana_container_name }}
+    restart: {{ grafana_restart_policy }}
+    environment:
+      - GF_SERVER_DOMAIN={{ grafana_server_domain }}
+      - GF_SERVER_ROOT_URL={{ grafana_server_root_url }}
+      - GF_INSTALL_PLUGINS={{ grafana_install_plugins }}
+      - GF_SERVER_ENABLE_GZIP={{ grafana_enable_gzip }}
+      - GF_RENDERING_SERVER_URL={{ grafana_rendering_server_url }}
+      - GF_LOG_MODE={{ grafana_log_mode }}
+    volumes:
+      - {{ grafana_data_dir }}/var:/var/lib/grafana
+    networks:
+      - {{ grafana_network_name }}
+      - {{ ansible_hostname }}-net-grafana
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  {{ grafana_network_name }}:
+    name: {{ grafana_network_name }}
+    external: true
+  {{ ansible_hostname }}-net-grafana:
+    name: {{ ansible_hostname }}-net-grafana

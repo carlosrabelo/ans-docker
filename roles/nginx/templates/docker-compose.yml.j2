@@ -1,0 +1,36 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: {{ nginx_restart_policy }}
+    ports:
+      - "{{ nginx_port_http }}:80"
+      - "{{ nginx_port_https }}:443"
+    environment:
+      TZ: '{{ nginx_timezone }}'
+    volumes:
+      - {{ nginx_data_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro
+      - {{ nginx_data_dir }}/conf.d:/etc/nginx/conf.d:ro
+      - {{ nginx_data_dir }}/certs:/etc/nginx/certs:ro
+      - {{ nginx_data_dir }}/logs:/var/log/nginx
+      - {{ nginx_data_dir }}/html:/usr/share/nginx/html/html:ro
+    networks:
+      - {{ ansible_hostname }}-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  {{ ansible_hostname }}-net:
+    name: {{ ansible_hostname }}-net
+    external: true
